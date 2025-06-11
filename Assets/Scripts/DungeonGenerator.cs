@@ -1,47 +1,46 @@
-using System.Collections;
-using System.Collections.Generic;
-using NaughtyAttributes;
 using UnityEngine;
+using System.Collections.Generic;
 
 public class DungeonGenerator : MonoBehaviour
 {
-    [Header("Dungeon Size")]
-    [SerializeField] private RectInt dungeonArea;
-    
-    [Header("Room Settings")]
-    [SerializeField] private List<RectInt> rooms = new List<RectInt>();
-    public int minRoomSize = 3;
-    
+    [SerializeField] private RectInt dungeonBounds;
+    private RectInt roomA, roomB;
+    private RectInt roomA1, roomA2;
+    private RectInt roomB1, roomB2;
+    public bool splitHorizontally = false;
 
-    void Start()
-    { 
-        //StartCoroutine(GenerateDungeon());
-        GenerateDungeon();
+    private void Start()
+    {
+        SplitRectInt(dungeonBounds, out roomA, out roomB, splitHorizontally);
+
+        // Split roomA with the same direction
+        SplitRectInt(roomA, out roomA1, out roomA2, splitHorizontally);
+
+        // Split roomB with the opposite direction
+        SplitRectInt(roomB, out roomB1, out roomB2, !splitHorizontally);
     }
 
-   
-    [Button]
-    //public IEnumerator GenerateDungeon()
-    private void GenerateDungeon()
+    private void Update()
     {
-        (RectInt roomA, RectInt roomB) = SplitHorizontally(dungeonArea);
-        rooms.Add(roomA);
-        rooms.Add(roomB);
-        DebugDrawingBatcher.BatchCall( () =>
+        AlgorithmsUtils.DebugRectInt(roomA1, Color.green);
+        AlgorithmsUtils.DebugRectInt(roomA2, Color.cyan);
+        AlgorithmsUtils.DebugRectInt(roomB1, Color.magenta);
+        AlgorithmsUtils.DebugRectInt(roomB2, Color.red);
+    }
+
+    public void SplitRectInt(RectInt rect, out RectInt roomA, out RectInt roomB, bool splitHorizontally)
+    {
+        if (splitHorizontally)
         {
-            AlgorithmsUtils.DebugRectInt(roomA, Color.red);
-            AlgorithmsUtils.DebugRectInt(roomB, Color.green);
-        });
-        //yield return new WaitForEndOfFrame();
-    }
-
-    private (RectInt, RectInt) SplitHorizontally(RectInt splitRoom)
-    {
-        RectInt roomA = splitRoom;
-        RectInt roomB = splitRoom;
-        roomA.height = (splitRoom.height / 2) + Random.Range(0, splitRoom.height);
-        roomB.height -= (roomA.height - 1);
-        roomB.y += roomA.height - 1;
-        return (roomA, roomB);
+            int splitY = rect.y + rect.height / 2;
+            roomA = new RectInt(rect.x, rect.y, rect.width, splitY - rect.y);
+            roomB = new RectInt(rect.x, splitY, rect.width, rect.yMax - splitY);
+        }
+        else
+        {
+            int splitX = rect.x + rect.width / 2;
+            roomA = new RectInt(rect.x, rect.y, splitX - rect.x, rect.height);
+            roomB = new RectInt(splitX, rect.y, rect.xMax - splitX, rect.height);
+        }
     }
 }
